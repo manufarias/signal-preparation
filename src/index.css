@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@theme {
+  --color-sp-bg: #e8f0f2;
+  --color-sp-surface: #f7f9f9;
+  --color-sp-primary: #1f5c5e;
+  --color-sp-primary-light: #4a8a8c;
+  --color-sp-border: #a8c4c5;
+  --color-sp-text-primary: #1a1a1a;
+  --color-sp-text-secondary: #6b7280;
+  --color-sp-status-bg-ok: #e1f5ee;
+  --color-sp-status-fg-ok: #0f6e56;
+  --color-sp-status-bg-warn: #faeeda;
+  --color-sp-status-fg-warn: #854f0b;
+  --color-sp-status-bg-urgent: #fcebeb;
+  --color-sp-status-fg-urgent: #a32d2d;
+  --radius-shell: 20px;
+  --radius-card: 8px;
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutToRight {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+button {
+  cursor: pointer;
+}
