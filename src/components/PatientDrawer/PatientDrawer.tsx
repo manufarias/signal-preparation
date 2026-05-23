@@ -124,7 +124,6 @@ export function PatientDrawer({ open, onClose, onSuccess, patient }: Props) {
               <input
                 {...register("given", { required: "First name is required" })}
                 autoFocus
-                placeholder="Manuel"
                 className="w-full px-3 py-2.5 text-[14px] bg-sp-bg border border-sp-border rounded-lg outline-none focus:border-sp-primary transition-colors"
               />
               {errors.given && (
@@ -142,7 +141,6 @@ export function PatientDrawer({ open, onClose, onSuccess, patient }: Props) {
                 {...register("family", {
                   required: "Last name is required",
                 })}
-                placeholder="Farías"
                 className="w-full px-3 py-2.5 text-[14px] bg-sp-bg border border-sp-border rounded-lg outline-none focus:border-sp-primary transition-colors"
               />
               {errors.family && (

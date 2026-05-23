@@ -45,10 +45,7 @@ function EmptyPanel() {
   return (
     <div className="flex flex-col items-center justify-center h-full text-sp-text-secondary">
       <User size={28} className="mb-3 opacity-20" />
-      <p className="text-[14px] font-medium">Seleccioná un paciente</p>
-      <p className="text-[12px] mt-1 opacity-60">
-        El resumen clínico aparecerá acá
-      </p>
+      <p className="text-[14px] font-medium">Select a patient</p>
     </div>
   );
 }
@@ -365,7 +362,7 @@ export function PatientsPage() {
           />
           <input
             type="text"
-            placeholder="Buscar por nombre…"
+            placeholder="Search by name …"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 text-[14px] bg-sp-surface border border-sp-border rounded-lg outline-none focus:border-sp-primary transition-colors placeholder:text-sp-text-secondary"
@@ -373,9 +370,9 @@ export function PatientsPage() {
         </div>
         <button
           onClick={() => setDrawerOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-sp-primary text-white text-[14px] font-medium rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap"
+          className="flex items-center gap-2 px-4 py-2.5 bg-sp-primary text-white text-[13px] font-medium rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap"
         >
-          + Nuevo paciente
+          + Create patient
         </button>
       </div>
 
@@ -393,24 +390,24 @@ export function PatientsPage() {
             {loading ? (
               <div className="flex items-center justify-center py-20 text-sp-text-secondary">
                 <Loader2 size={18} className="animate-spin mr-2" />
-                <span className="text-[13px]">Buscando…</span>
+                <span className="text-[13px]">Searching…</span>
               </div>
             ) : error ? (
               <div className="flex items-center gap-2 py-8 px-4 text-red-600">
                 <AlertCircle size={14} />
-                <span className="text-[13px]">Error al cargar</span>
+                <span className="text-[13px]">Loading error</span>
               </div>
             ) : patients.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-sp-text-secondary px-4">
                 <p className="text-[13px] font-medium text-center">
-                  Sin resultados
+                  No results
                 </p>
                 {searchInput && (
                   <button
                     onClick={() => setDrawerOpen(true)}
                     className="mt-3 text-[12px] text-sp-primary underline underline-offset-2 hover:opacity-70"
                   >
-                    Crear "{searchInput}"
+                    Create "{searchInput}"
                   </button>
                 )}
               </div>

@@ -29,6 +29,7 @@ import type { DayLoad } from "../hooks/useWeekAppointments";
 import { PanelHeader } from "../components/PanelHeader/PanelHeader";
 import { usePatientDetail } from "../hooks/usePatientDetail";
 import { parseMedicationDisplay } from "../utils/parseMedication";
+import { useMonthAppointments } from "../hooks/useMonthAppointments";
 
 const STATUS_STYLES: Record<string, { bg: string; fg: string; label: string }> =
   {
@@ -907,6 +908,215 @@ function WeekView({
   );
 }
 
+function MonthView({
+  days,
+  loading,
+  currentDate,
+  onSelectDay,
+}: {
+  days: DayLoad[];
+  loading: boolean;
+  currentDate: Date;
+  onSelectDay: (date: Date) => void;
+}) {
+  const [selectedDay, setSelectedDay] = useState<DayLoad | null>(null);
+  const today = new Date().toISOString().split("T")[0];
+  const maxLoad = Math.max(...days.map((d) => d.total), 1);
+
+  useEffect(() => {
+    if (days.length === 0) return;
+    const currentStr = currentDate.toISOString().split("T")[0];
+    const match = days.find((d) => d.dateStr === currentStr);
+    setSelectedDay(match ?? days[0]);
+  }, [days, currentDate]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-sp-text-secondary">
+        <Loader2 size={20} className="animate-spin mr-2" />
+        <span className="text-[14px]">Loading month…</span>
+      </div>
+    );
+  }
+
+  // Build calendar grid — Mon to Fri, all weeks of the month
+  const firstDay = days[0]?.date;
+  const lastDay = days[days.length - 1]?.date;
+  if (!firstDay || !lastDay) return null;
+
+  // Get Monday of first week
+  const gridStart = new Date(firstDay);
+  const dowFirst = gridStart.getDay();
+  gridStart.setDate(gridStart.getDate() - (dowFirst === 0 ? 6 : dowFirst - 1));
+
+  // Build 5-col grid rows
+  const rows: Date[][] = [];
+  const cursor = new Date(gridStart);
+  while (cursor <= lastDay || rows.length < 4) {
+    const row: Date[] = [];
+    for (let i = 0; i < 5; i++) {
+      row.push(new Date(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    // Skip weekends — already Mon-Fri since we start on Monday
+    rows.push(row);
+    if (cursor > lastDay && rows.length >= 4) break;
+  }
+
+  return (
+    <div className="flex gap-4 h-[calc(100vh-180px)]">
+      {/* Calendar grid */}
+      <div className="flex-1 bg-sp-surface rounded-card shadow-card-sm overflow-hidden flex flex-col">
+        {/* Day headers */}
+        <div className="grid grid-cols-5 border-b border-sp-border flex-shrink-0">
+          {["Mon", "Tue", "Wed", "Thu", "Fri"].map((d) => (
+            <div
+              key={d}
+              className="py-2 text-center text-[11px] font-medium uppercase tracking-wide text-sp-text-secondary border-r border-sp-border last:border-r-0"
+            >
+              {d}
+            </div>
+          ))}
+        </div>
+
+        {/* Grid rows */}
+        <div className="flex-1 overflow-y-auto">
+          {rows.map((row, ri) => (
+            <div
+              key={ri}
+              className="grid grid-cols-5 border-b border-sp-border last:border-b-0"
+              style={{ minHeight: "80px" }}
+            >
+              {row.map((d, ci) => {
+                const ds = d.toISOString().split("T")[0];
+                const dayLoad = days.find((dl) => dl.dateStr === ds);
+                const count = dayLoad?.total ?? 0;
+                const isToday = ds === today;
+                const isCurrentMonth = d.getMonth() === currentDate.getMonth();
+                const isSelected = selectedDay?.dateStr === ds;
+                const barWidth =
+                  count === 0 ? 0 : Math.round((count / maxLoad) * 100);
+
+                return (
+                  <button
+                    key={ci}
+                    onClick={() => dayLoad && setSelectedDay(dayLoad)}
+                    className="p-2 text-left border-r border-sp-border last:border-r-0 transition-colors hover:bg-sp-bg"
+                    style={{
+                      background: isSelected ? "#e6f4f1" : undefined,
+                      opacity: !isCurrentMonth ? 0.35 : 1,
+                    }}
+                  >
+                    {/* Day number */}
+                    <div
+                      className="text-[12px] font-medium mb-1.5 w-6 h-6 flex items-center justify-center rounded-full"
+                      style={{
+                        background: isToday ? "#1F5C5E" : "transparent",
+                        color: isToday
+                          ? "white"
+                          : isSelected
+                            ? "#1F5C5E"
+                            : "var(--color-text-primary)",
+                      }}
+                    >
+                      {d.getDate()}
+                    </div>
+
+                    {/* Load bar */}
+                    {count > 0 && (
+                      <div
+                        className="w-full rounded-sm overflow-hidden"
+                        style={{
+                          height: "4px",
+                          background: "var(--color-border-tertiary)",
+                        }}
+                      >
+                        <div
+                          className="h-full rounded-sm"
+                          style={{
+                            width: `${barWidth}%`,
+                            background:
+                              count >= 8
+                                ? "#1F5C5E"
+                                : count >= 5
+                                  ? "#4A8A8C"
+                                  : "#A8C4C5",
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Count */}
+                    {count > 0 && (
+                      <p
+                        className="text-[10px] mt-1"
+                        style={{
+                          color: isSelected
+                            ? "#1F5C5E"
+                            : "var(--color-text-secondary)",
+                        }}
+                      >
+                        {count}
+                      </p>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Panel derecho */}
+      <div className="w-[280px] bg-sp-surface rounded-card shadow-card-sm overflow-hidden flex flex-col flex-shrink-0">
+        {selectedDay ? (
+          <>
+            <PanelHeader
+              title={selectedDay.date.toLocaleDateString("en-US", {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+              })}
+              subtitle={`${selectedDay.total} ${selectedDay.total !== 1 ? "appointments" : "appointment"}`}
+              action={{
+                label: "Open day",
+                onClick: () => onSelectDay(selectedDay.date),
+              }}
+            />
+            <div className="overflow-y-auto flex-1">
+              {selectedDay.appointments.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-sp-text-secondary">
+                  <Clock size={24} className="mb-2 opacity-20" />
+                  <p className="text-[13px]">No appointments</p>
+                </div>
+              ) : (
+                selectedDay.appointments.map((appt) => (
+                  <div
+                    key={appt.id}
+                    className="grid grid-cols-[56px_1fr] gap-2 px-4 py-2.5 border-b border-sp-border last:border-b-0"
+                  >
+                    <span className="text-[12px] tabular-nums text-sp-text-secondary">
+                      {appt.time}
+                    </span>
+                    <span className="text-[12px] text-sp-text-primary truncate">
+                      {appt.patientName}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full text-sp-text-secondary">
+            <User size={28} className="mb-3 opacity-20" />
+            <p className="text-[14px] font-medium">Select a day</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function AgendaPage() {
   const [date, setDate] = useState(getInitialDate);
   const [mode, setMode] = useState<AgendaMode>(getInitialMode);
@@ -915,6 +1125,7 @@ export function AgendaPage() {
   const [now, setNow] = useState(new Date());
   const { appointments, loading, error, refetch } = useAppointments(date);
   const { days, loading: weekLoading } = useWeekAppointments(date);
+  const { days: monthDays, loading: monthLoading } = useMonthAppointments(date);
 
   function handleModeChange(newMode: AgendaMode) {
     setMode(newMode);
@@ -1103,6 +1314,16 @@ export function AgendaPage() {
         <WeekView
           days={days}
           loading={weekLoading}
+          currentDate={date}
+          onSelectDay={(d) => {
+            setDate(d);
+            setMode("day");
+          }}
+        />
+      ) : mode === "month" ? (
+        <MonthView
+          days={monthDays}
+          loading={monthLoading}
           currentDate={date}
           onSelectDay={(d) => {
             setDate(d);
