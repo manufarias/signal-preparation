@@ -55,7 +55,6 @@ export function CommandPalette() {
       id: "today",
       label: "Today's schedule",
       icon: CalendarDays,
-      action: () => go("/"),
       action: () => {
         go("/");
         setTimeout(() => {
