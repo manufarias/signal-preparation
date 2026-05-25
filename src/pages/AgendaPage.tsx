@@ -27,6 +27,7 @@ import type { AgendaMode } from "../components/DateNavigator/DateNavigator";
 import { useWeekAppointments } from "../hooks/useWeekAppointments";
 import type { DayLoad } from "../hooks/useWeekAppointments";
 import { PanelHeader } from "../components/PanelHeader/PanelHeader";
+import type { PatientSummary } from "../hooks/usePatientSummary";
 import { usePatientDetail } from "../hooks/usePatientDetail";
 import { parseMedicationDisplay } from "../utils/parseMedication";
 import { useMonthAppointments } from "../hooks/useMonthAppointments";
@@ -55,6 +56,7 @@ const STATUS_STYLES: Record<string, { bg: string; fg: string; label: string }> =
       label: "Cancelled",
     },
     pending: {
+      bg: "#FEF9C3",
       fg: "text-sp-text-secondary",
       label: "Pending",
     },
@@ -237,7 +239,7 @@ function AppointmentPanel({ appt }: { appt: AppointmentRow }) {
   const summary = usePatientSummary(appt.patientId);
   const episode = episodes[0] ?? null;
   const latest = episode?.observations[episode.observations.length - 1] ?? null;
-  const { patient } = usePatientDetail(appt.patientId);
+  const { patient } = usePatientDetail(appt.patientId ?? undefined);
   const [observationFilter, setObservationFilter] = useState<
     "all" | "vitals" | "labs" | "scores" | "social" | "other"
   >("all");

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { X, Loader2 } from "lucide-react";
 import { fhirClient } from "../../api/fhir";
+import type { ConsultationNote } from "../../hooks/useConsultations";
 
 interface Props {
   open: boolean;

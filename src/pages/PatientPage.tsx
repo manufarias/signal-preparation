@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { usePatientDetail } from "../hooks/usePatientDetail";
 import { useTodayAppointment } from "../hooks/useTodayAppointment";
+import type { VitalSeries } from "../hooks/usePatientDetail";
+import type { ConsultationNote } from "../hooks/useConsultations";
 import { useSignalEpisode } from "../hooks/useSignalEpisode";
 import { usePatientSummary } from "../hooks/usePatientSummary";
 import { PatientDrawer } from "../components/PatientDrawer/PatientDrawer";
@@ -275,7 +277,7 @@ export function PatientPage() {
   const [medicationDrawerOpen, setMedicationDrawerOpen] = useState(false);
   const [vitalSignDrawerOpen, setVitalSignDrawerOpen] = useState(false);
   const { appointment: todayAppointment } = useTodayAppointment(id);
-  const summary = usePatientSummary(id, patient?.age);
+  const summary = usePatientSummary(id ?? null, patient?.age);
   const [showSavedBanner, setShowSavedBanner] = useState(false);
   const [bannerVisible, setBannerVisible] = useState(false);
   const [newNoteId, setNewNoteId] = useState<string | null>(null);
