@@ -56,18 +56,40 @@ export function CommandPalette() {
       label: "Today's schedule",
       icon: CalendarDays,
       action: () => go("/"),
+      action: () => {
+        go("/");
+        setTimeout(() => {
+          window.dispatchEvent(
+            new CustomEvent("set-agenda-mode", { detail: "day" }),
+          );
+        }, 100);
+      },
     },
     {
       id: "week",
       label: "This week",
       icon: Calendar,
-      action: () => go("/?mode=week"),
+      action: () => {
+        go("/");
+        setTimeout(() => {
+          window.dispatchEvent(
+            new CustomEvent("set-agenda-mode", { detail: "week" }),
+          );
+        }, 100);
+      },
     },
     {
       id: "month",
       label: "This month",
       icon: Calendar,
-      action: () => go("/?mode=month"),
+      action: () => {
+        go("/");
+        setTimeout(() => {
+          window.dispatchEvent(
+            new CustomEvent("set-agenda-mode", { detail: "month" }),
+          );
+        }, 100);
+      },
     },
     {
       id: "search",

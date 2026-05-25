@@ -1752,7 +1752,7 @@ export function PatientPage() {
                         <div
                           key={c.id}
                           className="rounded-lg overflow-hidden"
-                          style={{ border: "0.5px solid #1c428d70" }}
+                          style={{ border: "0.5px solid #0F6E56" }}
                         >
                           {/* Header */}
                           <div
@@ -1930,7 +1930,7 @@ export function PatientPage() {
           setAmendingNote(null);
         }}
         onSuccess={(id) => {
-          setNewNoteId(id);
+          setNewNoteId(null); // reset primero
           setConsultationDrawerOpen(false);
           setAmendingNote(null);
           refetchConsultations();
@@ -1945,6 +1945,9 @@ export function PatientPage() {
               block: "start",
             });
           }, 100);
+          setTimeout(() => {
+            setNewNoteId(id); // seteamos después de que refetch tuvo tiempo de completarse
+          }, 1500);
         }}
       />
 

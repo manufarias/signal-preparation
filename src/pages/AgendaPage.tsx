@@ -1130,6 +1130,16 @@ function MonthView({
 export function AgendaPage() {
   const [date, setDate] = useState(getInitialDate);
   const [mode, setMode] = useState<AgendaMode>(getInitialMode);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const mode = (e as CustomEvent).detail as AgendaMode;
+      setMode(mode);
+    };
+    window.addEventListener("set-agenda-mode", handler);
+    return () => window.removeEventListener("set-agenda-mode", handler);
+  }, []);
+
   const [selected, setSelected] = useState<AppointmentRow | null>(null);
   const [backfilling, setBackfilling] = useState(true);
   const [now, setNow] = useState(new Date());
