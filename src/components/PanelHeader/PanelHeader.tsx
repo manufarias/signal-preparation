@@ -1,3 +1,5 @@
+import { ChevronRight } from "lucide-react";
+
 interface PanelHeaderProps {
   title: string;
   titleSecondary?: string;
@@ -77,7 +79,8 @@ export function PanelHeader({
           className="text-[14px] font-medium flex items-center gap-1 transition-opacity hover:opacity-70"
           style={{ color: "rgba(255,255,255,0.9)" }}
         >
-          {action.label} →
+          {action.label}{" "}
+          <ChevronRight size={18} strokeWidth={2.5} className="ml-1" />
         </button>
       )}
     </div>

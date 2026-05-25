@@ -22,3 +22,23 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+echo '
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Backup files
+*.backup
+*.bak
+**/*.backup
+
+# Scripts de población de datos
+add-coverage.cjs
+add-signal-patients.cjs
+add-*.cjs
+
+# Datos generados
+patients-generated.json
+' >> .gitignore

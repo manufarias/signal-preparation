@@ -6,13 +6,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
-  X,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CommandPalette } from "../CommandPalette/CommandPalette";
 import { TooltipItem } from "../TooltipItem/TooltipItem";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
 import { usePageTitle } from "../../context/PageTitleContext";
+import { AppointmentAlert } from "../AppointmentAlert/AppointmentAlert";
 
 const NAV = [
   { to: "/", label: "Schedule", icon: CalendarDays },
@@ -28,10 +28,24 @@ export function Shell({ children }: ShellProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { pageTitle } = usePageTitle();
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useKeyboardShortcuts([
     { key: "b", ctrl: true, action: () => setCollapsed((c) => !c) },
   ]);
+
+  useEffect(() => {
+    const base = "Signal Preparation";
+    if (pageTitle) {
+      document.title = `${pageTitle.split("·")[0].trim()} · ${base}`;
+    } else if (location.pathname === "/") {
+      document.title = `Schedule · ${base}`;
+    } else if (location.pathname === "/patients") {
+      document.title = `Patients · ${base}`;
+    } else {
+      document.title = base;
+    }
+  }, [pageTitle, location.pathname]);
 
   const TITLE_CONFIG: Record<string, { label: string; level: 1 | 2 }> = {
     "/": { label: "Schedule", level: 2 },
@@ -72,7 +86,7 @@ export function Shell({ children }: ShellProps) {
           {collapsed ? (
             <button
               onClick={() => setCollapsed(false)}
-              className="w-7 h-7 rounded-md bg-sp-primary flex items-center justify-center "
+              className="w-7 h-7 rounded-md bg-sp-primary flex items-center justify-center"
             >
               <Activity size={14} className="text-white" />
             </button>
@@ -104,7 +118,6 @@ export function Shell({ children }: ShellProps) {
                   ? "justify-center px-3 py-2.5 hover:bg-sp-bg"
                   : "gap-2 px-3 py-2 border border-sp-border bg-sp-bg hover:border-sp-primary",
               ].join(" ")}
-              // title="Buscar o navegar (Ctrl+K)"
             >
               <Search size={15} className="flex-shrink-0" />
               {!collapsed && (
@@ -181,35 +194,62 @@ export function Shell({ children }: ShellProps) {
 
       {/* ── Main panel ── */}
       <main
-        className="flex-1 bg-sp-bg rounded-shell mt-[24px] mr-[24px] mb-[24px] overflow-hidden"
+        className="flex-1 bg-sp-bg rounded-shell mt-[24px] mr-[24px] mb-[24px] overflow-hidden flex flex-col"
         style={{ height: "calc(100vh - 48px)" }}
       >
-        {/* Page header */}
-        <div className="flex items-center justify-between px-8 pt-7 pb-4">
-          <h1
-            className={
-              config.level === 1
-                ? "text-[24px] font-medium tracking-tight text-sp-text-primary leading-none"
-                : "text-[12px] font-semibold uppercase tracking-widest text-sp-text-secondary text-sp-text-primaryleading-none"
-            }
+        <AppointmentAlert />
+
+        <div
+          className={`flex-1 flex flex-col relative ${
+            location.pathname.startsWith("/patient/")
+              ? "overflow-y-auto"
+              : "overflow-hidden"
+          }`}
+          onScroll={(e) => setIsScrolled(e.currentTarget.scrollTop > 5)}
+        >
+          <div
+            className={`sticky top-0 z-20 flex items-center justify-between px-8 pt-7 pb-4 transition-all duration-300 flex-shrink-0 ${
+              isScrolled && location.pathname.startsWith("/patient/")
+                ? "bg-sp-bg/70 backdrop-blur-md shadow-sm border-b border-gray-200/50"
+                : "bg-transparent border-b border-transparent"
+            }`}
           >
-            {autoTitle}
-          </h1>
-          {location.pathname.startsWith("/patient/") && (
-            <button
-              onClick={() => navigate(-1)}
-              className="flex items-center gap-1.5 text-[13px] text-sp-text-secondary hover:text-sp-primary transition-colors"
-            >
-              <X size={14} />
-              Close chart
-            </button>
-          )}
+            {location.pathname.startsWith("/patient/") &&
+            autoTitle.includes("·") ? (
+              <div className="flex items-baseline gap-3">
+                <h1 className="text-[20px] font-semibold text-sp-text-primary tracking-tight leading-none">
+                  {autoTitle.split("·")[0].trim()}
+                </h1>
+                <span className="text-[16px] font-mono text-sp-text-secondary opacity-70">
+                  {autoTitle.split("·").slice(1).join("·").trim()}
+                </span>
+              </div>
+            ) : (
+              <h1
+                className={
+                  config.level === 1
+                    ? "text-[24px] font-medium tracking-tight text-sp-text-primary leading-none transition-colors"
+                    : "text-[12px] font-semibold uppercase tracking-widest text-sp-text-secondary leading-none transition-colors"
+                }
+              >
+                {autoTitle}
+              </h1>
+            )}
+
+            {location.pathname.startsWith("/patient/") && (
+              <button
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[14px] font-medium text-[#6B7280] hover:text-[#1F5C5E] transition-colors"
+              >
+                <ChevronLeft size={16} />
+                Back
+              </button>
+            )}
+          </div>
+
+          <div className="px-8 pb-8 flex-1">{children}</div>
         </div>
-
-        {/* Content */}
-        <div className="px-8 pb-8 h-full overflow-y-auto">{children}</div>
       </main>
-
       <CommandPalette />
     </div>
   );

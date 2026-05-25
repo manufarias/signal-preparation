@@ -30,6 +30,7 @@ import { PanelHeader } from "../components/PanelHeader/PanelHeader";
 import { usePatientDetail } from "../hooks/usePatientDetail";
 import { parseMedicationDisplay } from "../utils/parseMedication";
 import { useMonthAppointments } from "../hooks/useMonthAppointments";
+import { PhotoDrawer } from "../components/PhotoDrawer/PhotoDrawer";
 
 const STATUS_STYLES: Record<string, { bg: string; fg: string; label: string }> =
   {
@@ -237,6 +238,10 @@ function AppointmentPanel({ appt }: { appt: AppointmentRow }) {
   const episode = episodes[0] ?? null;
   const latest = episode?.observations[episode.observations.length - 1] ?? null;
   const { patient } = usePatientDetail(appt.patientId);
+  const [observationFilter, setObservationFilter] = useState<
+    "all" | "vitals" | "labs" | "scores" | "social" | "other"
+  >("all");
+  const [photoDrawerOpen, setPhotoDrawerOpen] = useState(false);
 
   const contextSummary =
     !summary.loading && !signalLoading
@@ -436,8 +441,7 @@ function AppointmentPanel({ appt }: { appt: AppointmentRow }) {
                             key={m.id}
                             className="flex items-center justify-between py-2"
                             style={{
-                              borderBottom:
-                                "0.5px solid var(--color-border-tertiary)",
+                              borderBottom: "0.5px solid #E5E7EB",
                             }}
                           >
                             <div>
@@ -669,11 +673,7 @@ function AppointmentPanel({ appt }: { appt: AppointmentRow }) {
                       Attached Photos
                     </h3>
                     <button
-                      onClick={() =>
-                        latest.photos.forEach(
-                          (url, i) => i === 0 && window.open(url, "_blank"),
-                        )
-                      }
+                      onClick={() => setPhotoDrawerOpen(true)}
                       className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded px-4 py-3  w-full md:w-max cursor-pointer"
                     >
                       <span className="text-sm text-gray-600 ">
@@ -738,6 +738,12 @@ function AppointmentPanel({ appt }: { appt: AppointmentRow }) {
           </div>
         ) : null}
       </div>
+
+      <PhotoDrawer
+        open={photoDrawerOpen}
+        photos={latest?.photos ?? []}
+        onClose={() => setPhotoDrawerOpen(false)}
+      />
     </div>
   );
 }
@@ -921,7 +927,6 @@ function MonthView({
 }) {
   const [selectedDay, setSelectedDay] = useState<DayLoad | null>(null);
   const today = new Date().toISOString().split("T")[0];
-  const maxLoad = Math.max(...days.map((d) => d.total), 1);
 
   useEffect(() => {
     if (days.length === 0) return;
@@ -939,17 +944,14 @@ function MonthView({
     );
   }
 
-  // Build calendar grid — Mon to Fri, all weeks of the month
   const firstDay = days[0]?.date;
   const lastDay = days[days.length - 1]?.date;
   if (!firstDay || !lastDay) return null;
 
-  // Get Monday of first week
   const gridStart = new Date(firstDay);
   const dowFirst = gridStart.getDay();
   gridStart.setDate(gridStart.getDate() - (dowFirst === 0 ? 6 : dowFirst - 1));
 
-  // Build 5-col grid rows
   const rows: Date[][] = [];
   const cursor = new Date(gridStart);
   while (cursor <= lastDay || rows.length < 4) {
@@ -958,7 +960,6 @@ function MonthView({
       row.push(new Date(cursor));
       cursor.setDate(cursor.getDate() + 1);
     }
-    // Skip weekends — already Mon-Fri since we start on Monday
     rows.push(row);
     if (cursor > lastDay && rows.length >= 4) break;
   }
@@ -967,7 +968,6 @@ function MonthView({
     <div className="flex gap-4 h-[calc(100vh-180px)]">
       {/* Calendar grid */}
       <div className="flex-1 bg-sp-surface rounded-card shadow-card-sm overflow-hidden flex flex-col">
-        {/* Day headers */}
         <div className="grid grid-cols-5 border-b border-sp-border flex-shrink-0">
           {["Mon", "Tue", "Wed", "Thu", "Fri"].map((d) => (
             <div
@@ -979,13 +979,12 @@ function MonthView({
           ))}
         </div>
 
-        {/* Grid rows */}
         <div className="flex-1 overflow-y-auto">
           {rows.map((row, ri) => (
             <div
               key={ri}
               className="grid grid-cols-5 border-b border-sp-border last:border-b-0"
-              style={{ minHeight: "80px" }}
+              style={{ minHeight: "88px" }}
             >
               {row.map((d, ci) => {
                 const ds = d.toISOString().split("T")[0];
@@ -994,70 +993,79 @@ function MonthView({
                 const isToday = ds === today;
                 const isCurrentMonth = d.getMonth() === currentDate.getMonth();
                 const isSelected = selectedDay?.dateStr === ds;
-                const barWidth =
-                  count === 0 ? 0 : Math.round((count / maxLoad) * 100);
+                const capacityPct = Math.min(
+                  Math.round((count / 10) * 100),
+                  100,
+                );
+                const isHigh = capacityPct >= 80;
 
                 return (
                   <button
                     key={ci}
-                    onClick={() => dayLoad && setSelectedDay(dayLoad)}
-                    className="p-2 text-left border-r border-sp-border last:border-r-0 transition-colors hover:bg-sp-bg"
+                    onClick={() =>
+                      dayLoad && count > 0 && setSelectedDay(dayLoad)
+                    }
+                    className="relative p-3 flex flex-col gap-1 border-r border-sp-border last:border-r-0 transition-colors hover:bg-sp-bg"
                     style={{
-                      background: isSelected ? "#e6f4f1" : undefined,
-                      opacity: !isCurrentMonth ? 0.35 : 1,
+                      cursor:
+                        count === 0 || !isCurrentMonth ? "default" : "pointer",
+                      opacity: !isCurrentMonth ? 0.25 : 1,
+                      ...(isSelected
+                        ? {
+                            background: "rgba(230,244,241,0.3)",
+                            boxShadow: "inset 0 0 0 2px #1F5C5E",
+                            zIndex: 10,
+                          }
+                        : {}),
                     }}
                   >
-                    {/* Day number */}
-                    <div
-                      className="text-[12px] font-medium mb-1.5 w-6 h-6 flex items-center justify-center rounded-full"
+                    <span
+                      className="flex items-center justify-center w-7 h-7 text-[13px] font-medium rounded-full flex-shrink-0"
                       style={{
                         background: isToday ? "#1F5C5E" : "transparent",
-                        color: isToday
-                          ? "white"
-                          : isSelected
-                            ? "#1F5C5E"
-                            : "var(--color-text-primary)",
+                        color: isToday ? "white" : "var(--color-text-primary)",
                       }}
                     >
                       {d.getDate()}
-                    </div>
+                    </span>
 
-                    {/* Load bar */}
-                    {count > 0 && (
-                      <div
-                        className="w-full rounded-sm overflow-hidden"
-                        style={{
-                          height: "4px",
-                          background: "var(--color-border-tertiary)",
-                        }}
-                      >
+                    {count > 0 && isCurrentMonth && (
+                      <div className="mt-auto">
+                        <div className="flex items-end justify-between mb-1.5">
+                          <span
+                            className="text-[11px] font-medium"
+                            style={{
+                              color: isHigh ? "#854F0B" : "#6B7280",
+                            }}
+                          >
+                            {count} apt{count !== 1 ? "s" : ""}
+                          </span>
+                        </div>
                         <div
-                          className="h-full rounded-sm"
+                          className="w-full rounded-full overflow-hidden"
                           style={{
-                            width: `${barWidth}%`,
-                            background:
-                              count >= 8
-                                ? "#1F5C5E"
+                            height: "6px",
+                            background: "#E5E7EB",
+                          }}
+                        >
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{
+                              width:
+                                count >= 8
+                                  ? "100%"
+                                  : count >= 5
+                                    ? "66%"
+                                    : "33%",
+                              background: isHigh
+                                ? "#854F0B"
                                 : count >= 5
                                   ? "#4A8A8C"
-                                  : "#A8C4C5",
-                          }}
-                        />
+                                  : "#1F5C5E",
+                            }}
+                          />
+                        </div>
                       </div>
-                    )}
-
-                    {/* Count */}
-                    {count > 0 && (
-                      <p
-                        className="text-[10px] mt-1"
-                        style={{
-                          color: isSelected
-                            ? "#1F5C5E"
-                            : "var(--color-text-secondary)",
-                        }}
-                      >
-                        {count}
-                      </p>
                     )}
                   </button>
                 );
@@ -1367,8 +1375,18 @@ export function AgendaPage() {
             {appointments.length > 0 && (
               <div className="px-4 py-2.5 border-t border-sp-border flex-shrink-0">
                 <p className="text-[11px] text-sp-text-secondary">
-                  {appointments.length}{" "}
-                  {appointments.length !== 1 ? "appointments" : "appointment"}
+                  {(() => {
+                    const now = new Date();
+                    const remaining = appointments.filter((a) => {
+                      if (!a.start) return false;
+                      return new Date(a.start) > now;
+                    }).length;
+                    const isToday = date.toDateString() === now.toDateString();
+                    if (!isToday)
+                      return `${appointments.length} ${appointments.length !== 1 ? "appointments" : "appointment"}`;
+                    if (remaining === 0) return "No more patients today";
+                    return `${remaining} ${remaining !== 1 ? "patients" : "patient"} remaining today`;
+                  })()}
                 </p>
               </div>
             )}
