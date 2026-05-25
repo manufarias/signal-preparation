@@ -6,7 +6,7 @@ interface Props {
   open: boolean;
   patientId: string;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (compositionId: string) => void;
   amendNote?: ConsultationNote;
 }
 
@@ -95,7 +95,7 @@ export function ConsultationDrawer({
       const encounterId = encounterRes.data.id;
 
       // 2. Create Composition (SOAP)
-      await fhirClient.post("/Composition", {
+      const composRes = await fhirClient.post<{ id: string }>("/Composition", {
         resourceType: "Composition",
         status: "final",
         type: {
@@ -146,7 +146,7 @@ export function ConsultationDrawer({
         ],
       });
 
-      onSuccess();
+      onSuccess(composRes.data.id);
       handleClose();
     } catch {
       setError("Error saving. Please try again.");

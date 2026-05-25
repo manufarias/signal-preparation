@@ -14,6 +14,7 @@ import {
   ImageIcon,
 } from "lucide-react";
 import { usePatientDetail } from "../hooks/usePatientDetail";
+import { useTodayAppointment } from "../hooks/useTodayAppointment";
 import { useSignalEpisode } from "../hooks/useSignalEpisode";
 import { usePatientSummary } from "../hooks/usePatientSummary";
 import { PatientDrawer } from "../components/PatientDrawer/PatientDrawer";
@@ -273,6 +274,11 @@ export function PatientPage() {
   const [conditionDrawerOpen, setConditionDrawerOpen] = useState(false);
   const [medicationDrawerOpen, setMedicationDrawerOpen] = useState(false);
   const [vitalSignDrawerOpen, setVitalSignDrawerOpen] = useState(false);
+  const { appointment: todayAppointment } = useTodayAppointment(id);
+  const summary = usePatientSummary(id, patient?.age);
+  const [showSavedBanner, setShowSavedBanner] = useState(false);
+  const [bannerVisible, setBannerVisible] = useState(false);
+  const [newNoteId, setNewNoteId] = useState<string | null>(null);
 
   function copyAffiliationId() {
     if (!coverage.affiliationId) return;
@@ -301,6 +307,23 @@ export function PatientPage() {
       setPageTitle(undefined);
     };
   }, [patient]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === "n") {
+        e.preventDefault();
+        setConsultationDrawerOpen(true);
+      }
+    };
+    const drawerHandler = () => setConsultationDrawerOpen(true);
+
+    window.addEventListener("keydown", handler);
+    window.addEventListener("open-consultation-drawer", drawerHandler);
+    return () => {
+      window.removeEventListener("keydown", handler);
+      window.removeEventListener("open-consultation-drawer", drawerHandler);
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -452,6 +475,82 @@ export function PatientPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Consultation context ── */}
+      {todayAppointment && patient && (
+        <div className="bg-sp-surface rounded-card shadow-card-sm overflow-hidden">
+          <SectionLabel>Consultation context · Today</SectionLabel>
+          <div className="px-6 py-4">
+            {/* Appointment data */}
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-[13px] font-medium text-sp-text-primary">
+                {todayAppointment.time}
+              </span>
+              <span className="text-sp-text-secondary text-[13px]">·</span>
+              <span className="text-[13px] text-sp-text-secondary">
+                Ambulatory
+              </span>
+              <span className="text-sp-text-secondary text-[13px]">·</span>
+              <span className="text-[13px] text-sp-text-secondary">
+                {todayAppointment.reason}
+              </span>
+              <span
+                className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded"
+                style={{ background: "#E1F5EE", color: "#085041" }}
+              >
+                {todayAppointment.status}
+              </span>
+            </div>
+
+            {/* Clinical summary */}
+            {!summary.loading &&
+              (summary.conditions.length > 0 ||
+                summary.medications.length > 0) && (
+                <div
+                  className="px-4 py-3 rounded-lg text-[13px] text-sp-text-primary leading-relaxed"
+                  style={{
+                    background: "var(--color-background-secondary)",
+                    border: "0.5px solid #E5E7EB",
+                  }}
+                >
+                  {(() => {
+                    const firstName = patient.name.split(" ")[0];
+                    const sentences: string[] = [];
+                    const confirmed = summary.conditions
+                      .filter((c) => c.verificationStatus === "confirmed")
+                      .map((c) => c.display);
+
+                    if (confirmed.length > 0) {
+                      sentences.push(
+                        `${firstName} presents with ${confirmed.slice(0, 2).join(" and ")}`,
+                      );
+                    }
+                    if (summary.medications.length > 0) {
+                      sentences.push(
+                        `Currently on ${summary.medications.length} active medication${summary.medications.length > 1 ? "s" : ""}`,
+                      );
+                    }
+                    return sentences.join(". ") + ".";
+                  })()}
+                </div>
+              )}
+
+            {/* Polypharmacy alert */}
+            {summary.polypharmacy.detected && (
+              <div
+                className="mt-2 px-3 py-2 rounded-lg text-[12px]"
+                style={{
+                  background: "#FAEEDA",
+                  border: "0.5px solid #F5CBA7",
+                  color: "#854F0B",
+                }}
+              >
+                ⚠ {summary.polypharmacy.reason}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Signal episode ── */}
       {!signalLoading && hasSignal && episode && (
@@ -709,11 +808,21 @@ export function PatientPage() {
             className="sticky top-0 z-10 bg-sp-surface"
             style={{ borderBottom: "1px solid #E5E7EB" }}
           >
-            <FolderTabs
-              tabs={tabs}
-              activeTab={activeTab}
-              onSelect={setActiveTab}
-            />
+            <div className="flex items-center justify-between pr-4">
+              <FolderTabs
+                tabs={tabs}
+                activeTab={activeTab}
+                onSelect={(tab) => {
+                  setActiveTab(tab);
+                  setTimeout(() => {
+                    foldersRef.current?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "start",
+                    });
+                  }, 50);
+                }}
+              />
+            </div>
           </div>
 
           <div className="flex-1" style={{ minHeight: "500px" }}>
@@ -1604,14 +1713,22 @@ export function PatientPage() {
                     {consultations.length} consultation
                     {consultations.length !== 1 ? "s" : ""} recorded
                   </p>
-                  <button
-                    onClick={() => setConsultationDrawerOpen(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
-                    style={{ border: "0.5px solid #1F5C5E", color: "#1F5C5E" }}
-                  >
-                    <Plus size={13} /> Record consultation note
-                  </button>
                 </div>
+
+                {showSavedBanner && (
+                  <div
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg mb-3 text-[12px] font-medium transition-opacity duration-700"
+                    style={{
+                      background: "#E1F5EE",
+                      color: "#085041",
+                      border: "0.5px solid #A8C4C5",
+                      opacity: bannerVisible ? 1 : 0,
+                    }}
+                  >
+                    <CheckCircle size={13} />
+                    Consultation note saved successfully
+                  </div>
+                )}
 
                 {consultationsLoading ? (
                   <div className="flex items-center gap-2 text-sp-text-secondary">
@@ -1627,12 +1744,13 @@ export function PatientPage() {
                 ) : (
                   <div className="space-y-2">
                     {consultations.map((c) => {
-                      const isExpanded = expandedConsultation === c.id;
+                      const isExpanded =
+                        expandedConsultation === c.id || newNoteId === c.id;
                       return (
                         <div
                           key={c.id}
                           className="rounded-lg overflow-hidden"
-                          style={{ border: "0.5px solid #E5E7EB" }}
+                          style={{ border: "0.5px solid #1c428d70" }}
                         >
                           {/* Header */}
                           <div
@@ -1648,9 +1766,6 @@ export function PatientPage() {
                               </p>
                             </div>
                             <div className="flex items-center gap-3 flex-shrink-0">
-                              <span className="text-[11px] text-sp-text-secondary">
-                                {c.date}
-                              </span>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -1660,8 +1775,12 @@ export function PatientPage() {
                                 className="text-[11px] hover:opacity-70 transition-opacity"
                                 style={{ color: "#1F5C5E" }}
                               >
-                                Amend
+                                Amend register
                               </button>
+                              <span className="text-[12px] text-sp-text-secondary">
+                                {c.date}
+                              </span>
+
                               <ChevronDown
                                 size={14}
                                 className="text-sp-text-secondary transition-transform duration-200"
@@ -1808,11 +1927,22 @@ export function PatientPage() {
           setConsultationDrawerOpen(false);
           setAmendingNote(null);
         }}
-        onSuccess={() => {
+        onSuccess={(id) => {
+          setNewNoteId(id);
           setConsultationDrawerOpen(false);
           setAmendingNote(null);
           refetchConsultations();
           setActiveTab("consultations");
+          setShowSavedBanner(true);
+          setBannerVisible(true);
+          setTimeout(() => setBannerVisible(false), 2500);
+          setTimeout(() => setShowSavedBanner(false), 3200);
+          setTimeout(() => {
+            foldersRef.current?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }, 100);
         }}
       />
 

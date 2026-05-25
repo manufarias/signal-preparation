@@ -23,7 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 
-echo '
 # Environment
 .env
 .env.local
@@ -38,7 +37,9 @@ echo '
 add-coverage.cjs
 add-signal-patients.cjs
 add-*.cjs
+generate-*.cjs
+cleanup-*.sh
+reset-*.sh
 
 # Datos generados
 patients-generated.json
-' >> .gitignore

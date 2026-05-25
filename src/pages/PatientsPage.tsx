@@ -151,10 +151,10 @@ function PatientPanel({ patient }: { patient: Patient }) {
           <div>
             <button
               onClick={() => setBackgroundOpen((o) => !o)}
-              className="w-full flex items-center justify-between px-5 py-3 bg-gray-100 border-b border-gray-200  transition-colors"
+              className="w-full flex items-center justify-between px-5 py-3 bg-gray-100 border-b border-gray-200  transition-colors hover:bg-gray-200"
             >
-              <div className="flex items-center gap-3">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-sp-text-secondary">
+              <div className="flex items-center gap-2 ">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-sp-text-secondary">
                   Clinical background
                 </p>
                 {summary.clinicalRecordsDate && (
@@ -162,14 +162,13 @@ function PatientPanel({ patient }: { patient: Patient }) {
                     Last records available · {summary.clinicalRecordsDate}
                   </p>
                 )}
-              </div>
-              <ChevronDown
-                size={14}
-                className="text-sp-text-secondary transition-transform duration-200 flex-shrink-0"
-                style={{
-                  transform: backgroundOpen ? "rotate(180deg)" : "rotate(0deg)",
-                }}
-              />
+              </div>{" "}
+              <span
+                className="text-[12px] font-medium transition-colors mr-3"
+                style={{ color: "#1F5C5E" }}
+              >
+                {backgroundOpen ? "Close" : "Open"}
+              </span>
             </button>
 
             {backgroundOpen && (

@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
+  Plus,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { CommandPalette } from "../CommandPalette/CommandPalette";
@@ -237,13 +238,32 @@ export function Shell({ children }: ShellProps) {
             )}
 
             {location.pathname.startsWith("/patient/") && (
-              <button
-                onClick={() => navigate(-1)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-[14px] font-medium text-[#6B7280] hover:text-[#1F5C5E] transition-colors"
-              >
-                <ChevronLeft size={16} />
-                Back
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() =>
+                    window.dispatchEvent(
+                      new CustomEvent("open-consultation-drawer"),
+                    )
+                  }
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
+                  style={{ background: "#1F5C5E", color: "white" }}
+                >
+                  <Plus size={13} /> Record consultation
+                  <span
+                    className="ml-1.5 text-[10px] font-medium px-1.5 py-0.5 rounded"
+                    style={{ background: "rgba(255,255,255,0.2)" }}
+                  >
+                    Ctrl+N
+                  </span>
+                </button>
+                <button
+                  onClick={() => navigate(-1)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium text-[#6B7280] hover:text-[#1F5C5E] transition-colors"
+                >
+                  <ChevronLeft size={16} />
+                  Back
+                </button>
+              </div>
             )}
           </div>
 

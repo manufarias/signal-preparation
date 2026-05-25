@@ -110,7 +110,6 @@ export function SplashScreen({ onDone }: Props) {
 
       {/* Wordmark */}
       <div className="flex items-center gap-2 mb-1.5">
-        <Activity size={18} style={{ color: "#1F5C5E" }} />
         <span
           className="text-[18px] font-semibold tracking-wide"
           style={{ color: "var(--color-text-primary)" }}
@@ -120,7 +119,7 @@ export function SplashScreen({ onDone }: Props) {
             className="font-light"
             style={{ color: "var(--color-text-secondary)" }}
           >
-            Preparation
+            Prep
           </span>
         </span>
       </div>
@@ -128,7 +127,7 @@ export function SplashScreen({ onDone }: Props) {
         className="text-[11px] tracking-widest uppercase"
         style={{ color: "var(--color-text-secondary)", opacity: 0.6 }}
       >
-        Loading your session
+        Preparing your work
       </p>
     </div>
   );

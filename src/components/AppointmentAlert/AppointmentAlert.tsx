@@ -47,14 +47,7 @@ export function AppointmentAlert() {
         <p className="text-[12px]" style={{ color: "#856404", opacity: 0.9 }}>
           {next.patientName} · {next.time} ·{" "}
           <button
-            onClick={() => {
-              navigate("/");
-              setTimeout(() => {
-                window.dispatchEvent(
-                  new CustomEvent("select-appointment", { detail: next.id }),
-                );
-              }, 100);
-            }}
+            onClick={() => navigate(`/patient/${next.patientId}`)}
             className="underline underline-offset-2 hover:opacity-70 transition-opacity pl-2"
             style={{ color: "#0050D2" }}
           >
