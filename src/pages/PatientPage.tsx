@@ -217,6 +217,74 @@ function cleanScoreName(display: string): string {
   return display.split("[")[0].trim();
 }
 
+function InfoTooltip() {
+  const [show, setShow] = useState(false);
+  const [pos, setPos] = useState({ top: 0, right: 0 });
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  return (
+    <div>
+      <button
+        ref={btnRef}
+        onMouseEnter={() => {
+          const rect = btnRef.current?.getBoundingClientRect();
+          if (rect)
+            setPos({
+              top: rect.bottom + 8,
+              right: window.innerWidth - rect.right,
+            });
+          setShow(true);
+        }}
+        onMouseLeave={() => setShow(false)}
+        className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-medium"
+        style={{ background: "#E5E7EB", color: "#6B7280" }}
+      >
+        i
+      </button>
+      {show && (
+        <div
+          className="fixed z-[200] w-64 p-3 rounded-lg"
+          style={{
+            top: pos.top,
+            right: pos.right,
+            background: "white",
+            border: "0.5px solid #E5E7EB",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+          }}
+        >
+          <p
+            className="text-[11px] font-semibold mb-2"
+            style={{ color: "#374151" }}
+          >
+            How this summary is built
+          </p>
+          <div className="space-y-1.5">
+            {[
+              "Active conditions — confirmed diagnoses from the problem list",
+              "Active medications — current prescriptions",
+              "Polypharmacy alert — 5+ medications, age ≥65, or chronic conditions",
+            ].map((line, i) => (
+              <p
+                key={i}
+                className="text-[11px] leading-relaxed"
+                style={{ color: "#6B7280" }}
+              >
+                · {line}
+              </p>
+            ))}
+          </div>
+          <p
+            className="text-[10px] mt-2 pt-2"
+            style={{ color: "#9CA3AF", borderTop: "0.5px solid #F3F4F6" }}
+          >
+            Data pulled from FHIR R4 at consultation time
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main page ──────────────────────────────────────────────────────────
 export function PatientPage() {
   const { id } = useParams<{ id: string }>();
@@ -481,7 +549,9 @@ export function PatientPage() {
       {/* ── Consultation context ── */}
       {todayAppointment && patient && (
         <div className="bg-sp-surface rounded-card shadow-card-sm overflow-hidden">
-          <SectionLabel>Consultation context · Today</SectionLabel>
+          <SectionLabel action={<InfoTooltip />}>
+            Consultation context · Today
+          </SectionLabel>
           <div className="px-6 py-4">
             {/* Appointment data */}
             <div className="flex items-center gap-2 mb-3">

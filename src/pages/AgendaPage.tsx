@@ -15,7 +15,7 @@ import {
   ImageIcon,
   ChevronRight,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAppointments } from "../hooks/useAppointments";
 import type { AppointmentRow } from "../hooks/useAppointments";
 import {
@@ -227,6 +227,74 @@ function PatientPhotos({ photos }: { photos: string[] }) {
   );
 }
 
+function InfoTooltip() {
+  const [show, setShow] = useState(false);
+  const [pos, setPos] = useState({ top: 0, right: 0 });
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  return (
+    <div>
+      <button
+        ref={btnRef}
+        onMouseEnter={() => {
+          const rect = btnRef.current?.getBoundingClientRect();
+          if (rect)
+            setPos({
+              top: rect.bottom + 8,
+              right: window.innerWidth - rect.right,
+            });
+          setShow(true);
+        }}
+        onMouseLeave={() => setShow(false)}
+        className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-medium"
+        style={{ background: "#E5E7EB", color: "#6B7280" }}
+      >
+        i
+      </button>
+      {show && (
+        <div
+          className="fixed z-[200] w-64 p-3 rounded-lg"
+          style={{
+            top: pos.top,
+            right: pos.right,
+            background: "white",
+            border: "0.5px solid #E5E7EB",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+          }}
+        >
+          <p
+            className="text-[11px] font-semibold mb-2"
+            style={{ color: "#374151" }}
+          >
+            How this summary is built
+          </p>
+          <div className="space-y-1.5">
+            {[
+              "Active conditions — confirmed diagnoses from the problem list",
+              "Active medications — current prescriptions",
+              "Polypharmacy alert — 5+ medications, age ≥65, or chronic conditions",
+            ].map((line, i) => (
+              <p
+                key={i}
+                className="text-[11px] leading-relaxed"
+                style={{ color: "#6B7280" }}
+              >
+                · {line}
+              </p>
+            ))}
+          </div>
+          <p
+            className="text-[10px] mt-2 pt-2"
+            style={{ color: "#9CA3AF", borderTop: "0.5px solid #F3F4F6" }}
+          >
+            Data pulled from FHIR R4 at consultation time
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AppointmentPanel({ appt }: { appt: AppointmentRow }) {
   const navigate = useNavigate();
   const {
@@ -271,10 +339,11 @@ function AppointmentPanel({ appt }: { appt: AppointmentRow }) {
         {/* ── Layer 1 — Context summary ── */}
         {contextSummary && (
           <div className="border-b border-gray-200">
-            <div className="px-6 pt-3 pb-2 border-b border-gray-200 bg-gray-100">
+            <div className="px-6 pt-3 pb-2 border-b border-gray-200 bg-gray-100 flex items-center justify-between">
               <p className="text-[10px] font-semibold uppercase tracking-wide text-sp-text-secondary">
                 Consultation context
               </p>
+              <InfoTooltip />
             </div>
             <div className="px-5 py-4">
               <p className="text-[14px] text-sp-text-primary leading-relaxed">
