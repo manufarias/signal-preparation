@@ -222,6 +222,12 @@ export function LandingPage({ onStart }: Props) {
 
   useEffect(() => {}, []);
 
+  useEffect(() => {
+    const audio = new Audio("/sounds/Soft Piano Notes.mp3");
+    audio.preload = "auto";
+    audio.load();
+  }, []);
+
   function goTo(index: number) {
     if (animating || index === current) return;
     setAnimating(true);
