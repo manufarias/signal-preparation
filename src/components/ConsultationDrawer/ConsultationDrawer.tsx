@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { X, Loader2 } from "lucide-react";
 import { fhirClient } from "../../api/fhir";
 import type { ConsultationNote } from "../../hooks/useConsultations";
+import { sanitizeText } from "../../utils/sanitize";
 
 interface Props {
   open: boolean;
@@ -76,10 +77,18 @@ export function ConsultationDrawer({
     setSubmitting(true);
     setError(null);
 
+    // Sanitizá todos los campos antes del POST
+    const clean = {
+      chiefComplaint: sanitizeText(form.chiefComplaint),
+      subjective: sanitizeText(form.subjective),
+      objective: sanitizeText(form.objective),
+      assessment: sanitizeText(form.assessment),
+      plan: sanitizeText(form.plan),
+    };
+
     try {
       const now = new Date().toISOString();
 
-      // 1. Create Encounter
       const encounterRes = await fhirClient.post<{ id: string }>("/Encounter", {
         resourceType: "Encounter",
         status: "finished",
@@ -90,12 +99,11 @@ export function ConsultationDrawer({
         },
         subject: { reference: `Patient/${patientId}` },
         period: { start: now, end: now },
-        reasonCode: [{ text: form.chiefComplaint }],
+        reasonCode: [{ text: clean.chiefComplaint }],
       });
 
       const encounterId = encounterRes.data.id;
 
-      // 2. Create Composition (SOAP)
       const composRes = await fhirClient.post<{ id: string }>("/Composition", {
         resourceType: "Composition",
         status: "final",
@@ -111,7 +119,7 @@ export function ConsultationDrawer({
         subject: { reference: `Patient/${patientId}` },
         encounter: { reference: `Encounter/${encounterId}` },
         date: now,
-        title: form.chiefComplaint,
+        title: clean.chiefComplaint,
         author: [{ display: "Signal Prep" }],
         ...(amendNote
           ? {
@@ -127,22 +135,28 @@ export function ConsultationDrawer({
           {
             title: "Subjective",
             code: { coding: [{ system: "http://loinc.org", code: "61150-9" }] },
-            text: { status: "generated", div: `<div>${form.subjective}</div>` },
+            text: {
+              status: "generated",
+              div: `<div>${clean.subjective}</div>`,
+            },
           },
           {
             title: "Objective",
             code: { coding: [{ system: "http://loinc.org", code: "61149-1" }] },
-            text: { status: "generated", div: `<div>${form.objective}</div>` },
+            text: { status: "generated", div: `<div>${clean.objective}</div>` },
           },
           {
             title: "Assessment",
             code: { coding: [{ system: "http://loinc.org", code: "51847-2" }] },
-            text: { status: "generated", div: `<div>${form.assessment}</div>` },
+            text: {
+              status: "generated",
+              div: `<div>${clean.assessment}</div>`,
+            },
           },
           {
             title: "Plan",
             code: { coding: [{ system: "http://loinc.org", code: "18776-5" }] },
-            text: { status: "generated", div: `<div>${form.plan}</div>` },
+            text: { status: "generated", div: `<div>${clean.plan}</div>` },
           },
         ],
       });
@@ -155,7 +169,6 @@ export function ConsultationDrawer({
       setSubmitting(false);
     }
   }
-
   if (!open && !visible) return null;
 
   return (

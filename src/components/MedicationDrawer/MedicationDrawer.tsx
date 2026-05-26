@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { X, Loader2 } from "lucide-react";
 import { fhirClient } from "../../api/fhir";
+import { sanitizeText } from "../../utils/sanitize";
 
 const COMMON_MEDICATIONS = [
   {
@@ -143,6 +144,7 @@ export function MedicationDrawer({
     setError(null);
 
     const med = COMMON_MEDICATIONS.find((m) => m.code === selectedMed)!;
+    const cleanDosage = sanitizeText(dosage);
 
     try {
       await fhirClient.post("/MedicationRequest", {
