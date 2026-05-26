@@ -31,6 +31,7 @@ export function Shell({ children }: ShellProps) {
   const { pageTitle } = usePageTitle();
   const [isScrolled, setIsScrolled] = useState(false);
   const [networkError, setNetworkError] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
 
   useKeyboardShortcuts([
     { key: "b", ctrl: true, action: () => setCollapsed((c) => !c) },
@@ -50,10 +51,18 @@ export function Shell({ children }: ShellProps) {
   }, [pageTitle, location.pathname]);
 
   useEffect(() => {
-    const handler = () => setNetworkError(true);
-    const clearHandler = () => setNetworkError(false);
-    window.addEventListener("fhir-network-error", handler);
-    return () => window.removeEventListener("fhir-network-error", handler);
+    const errorHandler = () => setNetworkError(true);
+    const cacheHandler = (e: Event) => {
+      const time = (e as CustomEvent).detail as string;
+      setCachedAt(time);
+      setNetworkError(false);
+    };
+    window.addEventListener("fhir-network-error", errorHandler);
+    window.addEventListener("fhir-cache-active", cacheHandler);
+    return () => {
+      window.removeEventListener("fhir-network-error", errorHandler);
+      window.removeEventListener("fhir-cache-active", cacheHandler);
+    };
   }, []);
 
   const TITLE_CONFIG: Record<string, { label: string; level: 1 | 2 }> = {
@@ -208,29 +217,44 @@ export function Shell({ children }: ShellProps) {
       >
         <AppointmentAlert />
 
-        {networkError && (
+        {(networkError || cachedAt) && (
           <div
             className="flex items-center gap-3 px-6 py-2.5 flex-shrink-0"
-            style={{ background: "#FCEBEB", borderBottom: "1px solid #F5C6C6" }}
+            style={{
+              background: cachedAt ? "#FAEEDA" : "#FCEBEB",
+              borderBottom: `1px solid ${cachedAt ? "#F5CBA7" : "#F5C6C6"}`,
+            }}
           >
             <div
               className="w-2 h-2 rounded-full flex-shrink-0"
-              style={{ background: "#A32D2D" }}
+              style={{ background: cachedAt ? "#854F0B" : "#A32D2D" }}
             />
             <p className="text-[12px] text-sp-text-primary flex-1">
-              <span className="font-medium" style={{ color: "#A32D2D" }}>
-                FHIR server unavailable
-              </span>
-              {" · "}Clinical data cannot be loaded. Please try again in a few
-              minutes.
+              {cachedAt ? (
+                <>
+                  <span className="font-medium" style={{ color: "#854F0B" }}>
+                    Viewing cached data
+                  </span>
+                  {" · "}Last updated at {cachedAt} · Live data unavailable
+                </>
+              ) : (
+                <>
+                  <span className="font-medium" style={{ color: "#A32D2D" }}>
+                    FHIR server unavailable
+                  </span>
+                  {" · "}Clinical data cannot be loaded. Please try again in a
+                  few minutes.
+                </>
+              )}
             </p>
             <button
               onClick={() => {
                 setNetworkError(false);
+                setCachedAt(null);
                 window.location.reload();
               }}
               className="text-[11px] font-medium hover:opacity-70 transition-opacity"
-              style={{ color: "#A32D2D" }}
+              style={{ color: cachedAt ? "#854F0B" : "#A32D2D" }}
             >
               Retry
             </button>

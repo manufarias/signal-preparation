@@ -7,14 +7,9 @@ export interface FHIRAppointment {
   start?: string;
   end?: string;
   description?: string;
-  serviceType?: Array<{
-    coding?: Array<{ display?: string }>;
-  }>;
+  serviceType?: Array<{ coding?: Array<{ display?: string }> }>;
   participant?: Array<{
-    actor?: {
-      reference?: string;
-      display?: string;
-    };
+    actor?: { reference?: string; display?: string };
     status?: string;
   }>;
 }
@@ -44,18 +39,55 @@ function formatTime(iso?: string): string {
   });
 }
 
+const CACHE_KEY = "signal_appointments_cache";
+const CACHE_TTL_MS = 4 * 60 * 60 * 1000; // 4 horas
+
+interface AppointmentCache {
+  date: string;
+  timestamp: number;
+  appointments: AppointmentRow[];
+}
+
+function saveCache(date: string, appointments: AppointmentRow[]) {
+  const cache: AppointmentCache = {
+    date,
+    timestamp: Date.now(),
+    appointments,
+  };
+  sessionStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+}
+
+function readCache(
+  date: string,
+): { appointments: AppointmentRow[]; cachedAt: Date } | null {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const cache: AppointmentCache = JSON.parse(raw);
+    if (cache.date !== date) return null;
+    if (Date.now() - cache.timestamp > CACHE_TTL_MS) return null;
+    return {
+      appointments: cache.appointments,
+      cachedAt: new Date(cache.timestamp),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function useAppointments(date: Date = new Date()) {
   const [appointments, setAppointments] = useState<AppointmentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [cachedAt, setCachedAt] = useState<Date | null>(null);
 
-  // NUEVO: fetchAppointments es reutilizable para refetch
   const fetchAppointments = useCallback(async () => {
     setLoading(true);
     setError(null);
 
+    const d = date.toISOString().split("T")[0];
+
     try {
-      const d = date.toISOString().split("T")[0];
       const next = new Date(date);
       next.setDate(next.getDate() + 1);
       const dateEnd = next.toISOString().split("T")[0];
@@ -73,16 +105,13 @@ export function useAppointments(date: Date = new Date()) {
             p.actor?.reference?.startsWith("Patient/") ||
             p.actor?.reference?.startsWith("patient/"),
         );
-
         const patientId = parsePatientId(patientParticipant?.actor?.reference);
         const patientName =
           patientParticipant?.actor?.display ?? "Unknown patient";
-
         const reason =
           appt.description ??
           appt.serviceType?.[0]?.coding?.[0]?.display ??
           "No reason recorded";
-
         return {
           id: appt.id,
           patientId,
@@ -94,9 +123,28 @@ export function useAppointments(date: Date = new Date()) {
         };
       });
 
+      saveCache(d, rows);
+      setCachedAt(null);
       setAppointments(rows);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Error loading schedule");
+      // Intentar leer del cache
+      const cached = readCache(d);
+      if (cached) {
+        setAppointments(cached.appointments);
+        setCachedAt(cached.cachedAt);
+        setError(null);
+        window.dispatchEvent(
+          new CustomEvent("fhir-cache-active", {
+            detail: cached.cachedAt.toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            }),
+          }),
+        );
+      } else {
+        setError(err instanceof Error ? err.message : "Error loading schedule");
+      }
     } finally {
       setLoading(false);
     }
@@ -107,6 +155,5 @@ export function useAppointments(date: Date = new Date()) {
     return () => {};
   }, [fetchAppointments]);
 
-  // NUEVO: refetch expuesto para el simulator y otros componentes
-  return { appointments, loading, error, refetch: fetchAppointments };
+  return { appointments, loading, error, cachedAt, refetch: fetchAppointments };
 }
