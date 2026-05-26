@@ -253,7 +253,7 @@ export function VitalDrawer({ open, vital, onClose, context }: Props) {
                         setTimeout(() => {
                           const container = scrollRef.current;
                           if (!container) return;
-                          const start = container.scrollTop;
+                          const start = (container as HTMLDivElement).scrollTop;
                           const end =
                             container.scrollHeight - container.clientHeight;
                           const duration = 400;
@@ -266,7 +266,9 @@ export function VitalDrawer({ open, vital, onClose, context }: Props) {
                               progress < 0.5
                                 ? 2 * progress * progress
                                 : -1 + (4 - 2 * progress) * progress;
-                            container.scrollTop = start + (end - start) * ease;
+                            if (container)
+                              container.scrollTop =
+                                start + (end - start) * ease;
                             if (progress < 1)
                               requestAnimationFrame(animateScroll);
                           }
