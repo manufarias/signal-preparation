@@ -348,7 +348,12 @@ export function usePatientDetail(
           {
             display: string;
             unit: string;
-            points: { date: string; dateIso: string; value: number }[];
+            points: {
+              date: string;
+              dateIso: string;
+              value: number;
+              valueStr: string;
+            }[];
           }
         >();
 
@@ -376,6 +381,7 @@ export function usePatientDetail(
             date: formatDate(dateIso),
             dateIso,
             value: numeric,
+            valueStr: value,
           });
         }
 
@@ -389,7 +395,7 @@ export function usePatientDetail(
             code,
             display,
             unit,
-            latest: String(latest.value),
+            latest: latest.valueStr ?? String(latest.value),
             latestDate: latest.date,
             history: sorted.map((p) => ({ date: p.date, value: p.value })),
             trend: calcTrend(sorted),

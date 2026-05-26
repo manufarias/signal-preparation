@@ -31,6 +31,11 @@ import { PhotoDrawer } from "../components/PhotoDrawer/PhotoDrawer";
 import { ConditionDrawer } from "../components/ConditionDrawer/ConditionDrawer";
 import { MedicationDrawer } from "../components/MedicationDrawer/MedicationDrawer";
 import { VitalSignDrawer } from "../components/VitalSignDrawer/VitalSignDrawer";
+import {
+  evaluateVital,
+  evaluateBloodPressure,
+  statusColor,
+} from "../utils/referenceRanges";
 
 // ── Section label ──────────────────────────────────────────────────────
 function SectionLabel({
@@ -51,18 +56,23 @@ function SectionLabel({
 }
 
 // ── Vital card ─────────────────────────────────────────────────────────
+
 function VitalCard({
   label,
   value,
   unit,
   trend,
   history,
+  code,
+  context,
 }: {
   label: string;
   value: string;
   unit: string;
   trend: "up" | "down" | "stable";
   history: { value: number }[];
+  code: string;
+  context?: { hasHypertension?: boolean; hasCOPD?: boolean };
 }) {
   const max = Math.max(...history.map((h) => h.value), 1);
   const trendColor =
@@ -73,13 +83,28 @@ function VitalCard({
       : trend === "down"
         ? "↓ Decreasing"
         : "→ Stable";
+  const range =
+    code === "55284-4"
+      ? evaluateBloodPressure(value, context)
+      : evaluateVital(code, parseFloat(value), context);
+  const colors = range ? statusColor(range.status) : null;
 
   return (
     <div
       className="bg-gray-50 rounded-lg p-3"
       style={{ border: "0.5px solid #E5E7EB" }}
     >
-      <p className="text-[11px] text-sp-text-secondary mb-1">{label}</p>
+      <div className="flex items-start justify-between mb-1">
+        <p className="text-[11px] text-sp-text-secondary">{label}</p>
+        {range && colors && (
+          <span
+            className="text-[9px] font-medium px-1.5 py-0.5 rounded"
+            style={{ background: colors.bg, color: colors.color }}
+          >
+            {range.label}
+          </span>
+        )}
+      </div>
       <p className="text-[18px] font-medium text-sp-text-primary">
         {value}
         <span className="text-[10px] text-sp-text-secondary font-normal ml-1">
@@ -812,6 +837,19 @@ export function PatientPage() {
                       unit={v.unit}
                       trend={v.trend}
                       history={v.history}
+                      code={v.code}
+                      context={{
+                        hasHypertension: conditions.some((c) =>
+                          c.display.toLowerCase().includes("hypertension"),
+                        ),
+                        hasCOPD: conditions.some(
+                          (c) =>
+                            c.display.toLowerCase().includes("copd") ||
+                            c.display
+                              .toLowerCase()
+                              .includes("chronic obstructive"),
+                        ),
+                      }}
                     />
                   </div>
                 ))}
@@ -979,7 +1017,6 @@ export function PatientPage() {
                           </div>
                         </div>
                       )}
-
                       {/* Trending vitals */}
                       {trendingVitals.length > 0 && (
                         <div>
@@ -1013,7 +1050,7 @@ export function PatientPage() {
                                   Trend
                                 </th>
                                 <th
-                                  className="text-left pb-2 text-[11px] font-medium text-sp-text-secondary"
+                                  className="text-left pb-2 text-[11px] font-medium text-sp-text-secondary pl-4"
                                   style={{ width: "20%" }}
                                 >
                                   Sparkline
@@ -1065,15 +1102,85 @@ export function PatientPage() {
                                         {v.unit}
                                       </span>
                                     </td>
-                                    <td
-                                      className="py-3 text-[11px]"
-                                      style={{ color: trendColor }}
-                                    >
-                                      {trendLabel}
+                                    <td className="py-3">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-sp-text-primary">
+                                          {v.latest}
+                                          <span className="text-[11px] text-sp-text-secondary ml-1">
+                                            {v.unit}
+                                          </span>
+                                        </span>
+                                        {(() => {
+                                          const rangeResult =
+                                            v.code === "55284-4"
+                                              ? evaluateBloodPressure(
+                                                  v.latest,
+                                                  {
+                                                    hasHypertension:
+                                                      conditions.some((c) =>
+                                                        c.display
+                                                          .toLowerCase()
+                                                          .includes(
+                                                            "hypertension",
+                                                          ),
+                                                      ),
+                                                    hasCOPD: conditions.some(
+                                                      (c) =>
+                                                        c.display
+                                                          .toLowerCase()
+                                                          .includes("copd"),
+                                                    ),
+                                                  },
+                                                )
+                                              : evaluateVital(
+                                                  v.code,
+                                                  parseFloat(v.latest),
+                                                  {
+                                                    hasHypertension:
+                                                      conditions.some((c) =>
+                                                        c.display
+                                                          .toLowerCase()
+                                                          .includes(
+                                                            "hypertension",
+                                                          ),
+                                                      ),
+                                                    hasCOPD: conditions.some(
+                                                      (c) =>
+                                                        c.display
+                                                          .toLowerCase()
+                                                          .includes("copd"),
+                                                    ),
+                                                  },
+                                                );
+                                          if (
+                                            !rangeResult ||
+                                            rangeResult.status === "unknown"
+                                          )
+                                            return null;
+                                          const c = statusColor(
+                                            rangeResult.status,
+                                          );
+                                          return (
+                                            <span
+                                              className="text-[9px] font-medium px-1.5 py-0.5 rounded whitespace-nowrap "
+                                              style={{
+                                                background: c.bg,
+                                                color: c.color,
+                                              }}
+                                            >
+                                              {rangeResult.status === "normal"
+                                                ? "Normal"
+                                                : rangeResult.status === "watch"
+                                                  ? "Watch"
+                                                  : "Out of range"}
+                                            </span>
+                                          );
+                                        })()}
+                                      </div>
                                     </td>
                                     <td className="py-3">
                                       <div
-                                        className="flex items-end gap-0.5"
+                                        className="flex items-end gap-0.5 pl-4"
                                         style={{
                                           height: "18px",
                                           width: "60px",
@@ -2052,6 +2159,16 @@ export function PatientPage() {
         open={vitalDrawer !== null}
         vital={vitalDrawer}
         onClose={() => setVitalDrawer(null)}
+        context={{
+          hasHypertension: conditions.some((c) =>
+            c.display.toLowerCase().includes("hypertension"),
+          ),
+          hasCOPD: conditions.some(
+            (c) =>
+              c.display.toLowerCase().includes("copd") ||
+              c.display.toLowerCase().includes("chronic obstructive"),
+          ),
+        }}
       />
 
       <PatientDrawer
