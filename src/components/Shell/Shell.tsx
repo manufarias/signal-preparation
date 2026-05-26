@@ -38,7 +38,7 @@ export function Shell({ children }: ShellProps) {
   ]);
 
   useEffect(() => {
-    const base = "Signal Preparation";
+    const base = "Signal Prep";
     if (pageTitle) {
       document.title = `${pageTitle.split("·")[0].trim()} · ${base}`;
     } else if (location.pathname === "/") {
