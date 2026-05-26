@@ -32,6 +32,7 @@ import { usePatientDetail } from "../hooks/usePatientDetail";
 import { parseMedicationDisplay } from "../utils/parseMedication";
 import { useMonthAppointments } from "../hooks/useMonthAppointments";
 import { PhotoDrawer } from "../components/PhotoDrawer/PhotoDrawer";
+import { ServerError } from "../components/ServerError/ServerError";
 
 const STATUS_STYLES: Record<string, { bg: string; fg: string; label: string }> =
   {
@@ -1249,14 +1250,7 @@ export function AgendaPage() {
     return stop;
   }, [appointments, refetch]);
 
-  if (error) {
-    return (
-      <div className="flex items-center gap-2 py-8 text-red-600">
-        <AlertCircle size={16} />
-        <span className="text-[14px]">{error}</span>
-      </div>
-    );
-  }
+  if (error) return <ServerError />;
 
   if (backfilling) {
     return (

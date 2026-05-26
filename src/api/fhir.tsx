@@ -8,6 +8,16 @@ const fhirClient = axios.create({
   },
 });
 
+fhirClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (!error.response) {
+      window.dispatchEvent(new CustomEvent("fhir-network-error"));
+    }
+    return Promise.reject(error);
+  },
+);
+
 interface PatientFormData {
   given: string;
   family: string;

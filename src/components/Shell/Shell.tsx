@@ -30,6 +30,7 @@ export function Shell({ children }: ShellProps) {
   const navigate = useNavigate();
   const { pageTitle } = usePageTitle();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [networkError, setNetworkError] = useState(false);
 
   useKeyboardShortcuts([
     { key: "b", ctrl: true, action: () => setCollapsed((c) => !c) },
@@ -47,6 +48,13 @@ export function Shell({ children }: ShellProps) {
       document.title = base;
     }
   }, [pageTitle, location.pathname]);
+
+  useEffect(() => {
+    const handler = () => setNetworkError(true);
+    const clearHandler = () => setNetworkError(false);
+    window.addEventListener("fhir-network-error", handler);
+    return () => window.removeEventListener("fhir-network-error", handler);
+  }, []);
 
   const TITLE_CONFIG: Record<string, { label: string; level: 1 | 2 }> = {
     "/": { label: "Schedule", level: 2 },
@@ -199,6 +207,35 @@ export function Shell({ children }: ShellProps) {
         style={{ height: "calc(100vh - 48px)" }}
       >
         <AppointmentAlert />
+
+        {networkError && (
+          <div
+            className="flex items-center gap-3 px-6 py-2.5 flex-shrink-0"
+            style={{ background: "#FCEBEB", borderBottom: "1px solid #F5C6C6" }}
+          >
+            <div
+              className="w-2 h-2 rounded-full flex-shrink-0"
+              style={{ background: "#A32D2D" }}
+            />
+            <p className="text-[12px] text-sp-text-primary flex-1">
+              <span className="font-medium" style={{ color: "#A32D2D" }}>
+                FHIR server unavailable
+              </span>
+              {" · "}Clinical data cannot be loaded. Please try again in a few
+              minutes.
+            </p>
+            <button
+              onClick={() => {
+                setNetworkError(false);
+                window.location.reload();
+              }}
+              className="text-[11px] font-medium hover:opacity-70 transition-opacity"
+              style={{ color: "#A32D2D" }}
+            >
+              Retry
+            </button>
+          </div>
+        )}
 
         <div
           className={`flex-1 flex flex-col relative ${

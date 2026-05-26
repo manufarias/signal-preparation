@@ -404,14 +404,7 @@ export function PatientPage() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex items-center gap-2 py-8 text-red-600">
-        <AlertCircle size={16} />
-        <span className="text-[14px]">{error}</span>
-      </div>
-    );
-  }
+  if (error) return null;
 
   if (!patient) return null;
 

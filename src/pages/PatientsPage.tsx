@@ -18,6 +18,7 @@ import { usePatientSummary } from "../hooks/usePatientSummary";
 import { PanelHeader } from "../components/PanelHeader/PanelHeader";
 import {} from "lucide-react";
 import { parseMedicationDisplay } from "../utils/parseMedication";
+import { ServerError } from "../components/ServerError/ServerError";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -392,10 +393,7 @@ export function PatientsPage() {
                 <span className="text-[13px]">Searching…</span>
               </div>
             ) : error ? (
-              <div className="flex items-center gap-2 py-8 px-4 text-red-600">
-                <AlertCircle size={14} />
-                <span className="text-[13px]">Loading error</span>
-              </div>
+              <ServerError />
             ) : patients.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-sp-text-secondary px-4">
                 <p className="text-[13px] font-medium text-center">
