@@ -6,6 +6,7 @@ const fhirClient = axios.create({
     Authorization: `Bearer ${import.meta.env.VITE_FHIR_TOKEN}`,
     "Content-Type": "application/fhir+json",
   },
+  timeout: 6000,
 });
 
 fhirClient.interceptors.response.use(
