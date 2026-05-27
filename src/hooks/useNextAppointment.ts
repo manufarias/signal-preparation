@@ -41,7 +41,7 @@ export function useNextAppointment() {
               const minutesUntil = Math.round(
                 (start.getTime() - now.getTime()) / 60000,
               );
-              if (minutesUntil < -2 || minutesUntil > 60) return null;
+              if (minutesUntil < -2 || minutesUntil > 90) return null;
 
               const patientParticipant = appt.participant?.find((p) =>
                 p.actor?.reference?.startsWith("Patient/"),

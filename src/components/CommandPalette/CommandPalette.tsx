@@ -12,6 +12,7 @@ import {
 import usePatients from "../../hooks/usePatients";
 import { useDebounce } from "../../hooks/useDebounce";
 import { PatientDrawer } from "../PatientDrawer/PatientDrawer";
+import { useNextAppointment } from "../../hooks/useNextAppointment";
 
 type Mode = "commands" | "search";
 
@@ -32,6 +33,7 @@ export function CommandPalette() {
   const navigate = useNavigate();
   const debouncedSearch = useDebounce(search, 300);
   const { patients } = usePatients(mode === "search" ? debouncedSearch : "");
+  const nextPatient = useNextAppointment();
 
   function close() {
     setOpen(false);
@@ -51,6 +53,19 @@ export function CommandPalette() {
   }
 
   const commands: CommandItem[] = [
+    ...(nextPatient
+      ? [
+          {
+            id: "next",
+            label: `Next · ${nextPatient.patientName} · ${nextPatient.time}`,
+            icon: CalendarDays,
+            action: () =>
+              nextPatient.patientId
+                ? go(`/patient/${nextPatient.patientId}`)
+                : go("/"),
+          },
+        ]
+      : []),
     {
       id: "today",
       label: "Today's schedule",
@@ -108,9 +123,16 @@ export function CommandPalette() {
     },
   ];
 
+  const scheduleCommands = commands.filter((c) =>
+    ["next", "today", "week", "month"].includes(c.id),
+  );
+  const patientCommands = commands.filter((c) =>
+    ["search", "new", "browse"].includes(c.id),
+  );
+
   const commandGroups = [
-    { heading: "Schedule", items: commands.slice(0, 3) },
-    { heading: "Patients", items: commands.slice(3) },
+    { heading: "Schedule", items: scheduleCommands },
+    { heading: "Patients", items: patientCommands },
   ];
 
   const filteredCommands = commands.filter((item) =>
@@ -232,8 +254,18 @@ export function CommandPalette() {
               }
               value={search}
               onChange={(e) => {
-                setSearch(e.target.value);
+                const val = e.target.value;
+                setSearch(val);
                 setSelectedIndex(0);
+                if (mode === "commands" && val.length > 0) {
+                  const matchesCommand = commands.some((c) =>
+                    c.label.toLowerCase().includes(val.toLowerCase()),
+                  );
+                  if (!matchesCommand) setMode("search");
+                }
+                if (val.length === 0) {
+                  setMode("commands");
+                }
               }}
             />
             <button onClick={close} style={{ color: "#94a3b8" }}>
