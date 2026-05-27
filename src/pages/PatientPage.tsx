@@ -586,7 +586,22 @@ export function PatientPage() {
               </span>
               <span
                 className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded"
-                style={{ background: "#E1F5EE", color: "#085041" }}
+                style={(() => {
+                  switch (todayAppointment.status) {
+                    case "arrived":
+                    case "fulfilled":
+                      return { background: "#E1F5EE", color: "#085041" };
+                    case "booked":
+                    case "pending":
+                      return { background: "#EEF2FF", color: "#3730A3" };
+                    case "noshow":
+                      return { background: "#FCEBEB", color: "#A32D2D" };
+                    case "cancelled":
+                      return { background: "#F3F4F6", color: "#6B7280" };
+                    default:
+                      return { background: "#F3F4F6", color: "#6B7280" };
+                  }
+                })()}
               >
                 {todayAppointment.status}
               </span>

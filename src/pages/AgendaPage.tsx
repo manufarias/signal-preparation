@@ -840,7 +840,7 @@ function WeekView({
     setSelectedDay(match ?? days[0]);
   }, [days, currentDate]);
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date().toLocaleDateString("en-CA");
   const maxLoad = Math.max(...days.map((d) => d.total), 1);
 
   if (loading) {
