@@ -7,6 +7,8 @@ import { PatientsPage } from "./pages/PatientsPage";
 import { PageTitleProvider } from "./context/PageTitleContext";
 import { SplashScreen } from "./components/SplashScreen/SplashScreen";
 import { LandingPage } from "./components/LandingPage/LandingPage";
+import { inject } from "@vercel/analytics";
+inject();
 
 const SPLASH_KEY = "signal_splash_shown";
 
